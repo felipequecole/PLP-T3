@@ -5,42 +5,39 @@ import java.util.ArrayList;
  * Paradigmas de Linguagens de Programação - Trabalho 3
  */
 public class AulasTeoricas {
-    public static ArrayList<Sala> salas;
+    Sala[] salas = new Sala[5];
 
-    public static void setSalas(ArrayList<Sala> salas) {
-        AulasTeoricas.salas = salas;
-    }
-
-    public synchronized void reservar(String nome, int tamanho, boolean temProjetor){
-        boolean ok = false;
-        for (Sala sala : salas){
-            if(!sala.reservado && sala.tamanho >= tamanho && sala.temProjetor == temProjetor){
-                sala.reservado = true;
-                sala.reserva = nome;
-                ok = true;
-                System.out.print("Sala id: " + sala.id + " reservada para: " + nome + "\n");
-                notify();
-                break;
-            }
-        }
-        if (!ok) {
-            try {
-                System.out.println("Nenhuma sala disponível, você entrará na fila...");
-                wait();
-                reservar(nome, tamanho, temProjetor);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    AulasTeoricas(){
+        boolean proj = true;
+        for (int i = 0; i < 5; i++){
+            salas[i] = new Sala(10*i+10, proj);
+            proj = !proj;
         }
     }
 
-    public synchronized void liberar(String nome){
-        for (Sala sala: salas){
-            if(sala.reserva.equals(nome)){
-                System.out.println("Sala reservada por: " + sala.reserva + " agora está liberada");
-                sala.reservado = false;
+    public Sala procuraSalaLivre(int tamanho, boolean temProjetor){
+        for (Sala sala: this.salas){
+            if(!sala.isReservado() && sala.getTamanho() >= tamanho && sala.isTemProjetor() == temProjetor){
+                return sala;
             }
         }
+        return null;
+    }
+
+    public synchronized Sala reservar(String nome, int tamanho, boolean temProjetor) throws InterruptedException{
+        Sala sala;
+        while ((sala = procuraSalaLivre(tamanho, temProjetor)) == null){
+            wait();
+        }
+        sala.setReservado(true);
+        sala.setReserva(nome);
+        notify();
+        return sala;
+    }
+
+    public synchronized void liberar(Sala sala) throws InterruptedException{
+        sala.setReservado(false);
+        sala.setReserva("");
         notify();
     }
 }
